@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thai Fish Prawn Crab (Debug)</title>
+    <title>Thai Fish Prawn Crab</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: #f0f0f0; /* Fallback background */
+            background-image: url('https://images.unsplash.com/photo-1520769669658-794e37d98d03?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             margin: 0;
             padding: 20px;
             color: #333;
@@ -98,7 +101,7 @@
 </head>
 <body>
     <div class="game-container">
-        <h1>Thai Fish Prawn Crab (Debug)</h1>
+        <h1>Thai Fish Prawn Crab</h1>
         <div class="reels">
             <div class="reel" id="reel1">?</div>
             <div class="reel" id="reel2">?</div>
@@ -135,151 +138,153 @@
         let isSpinning = false;
         let selectedBets = [];
 
+        // Check for missing DOM elements
         if (!reels.every(reel => reel) || !spinButton || !playTenButton || !bettingArea) {
             console.error('DOM elements not found:', { reels, spinButton, playTenButton, bettingArea });
             resultDisplay.textContent = 'Error: Game elements not loaded properly.';
-            return;
-        }
+            if (spinButton) spinButton.disabled = true;
+            if (playTenButton) playTenButton.disabled = true;
+        } else {
+            console.log('DOM elements loaded successfully');
 
-        console.log('DOM elements loaded successfully');
-
-        // Initialize betting options
-        const betOptions = bettingArea.querySelectorAll('.bet-option');
-        betOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                if (isSpinning) return;
-                option.classList.toggle('selected');
-                const symbol = option.getAttribute('data-symbol');
-                if (option.classList.contains('selected')) {
-                    if (selectedBets.length < 2) {
-                        selectedBets.push(symbol);
-                        console.log('Bet added:', selectedBets);
+            // Initialize betting options
+            const betOptions = bettingArea.querySelectorAll('.bet-option');
+            betOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    if (isSpinning) return;
+                    option.classList.toggle('selected');
+                    const symbol = option.getAttribute('data-symbol');
+                    if (option.classList.contains('selected')) {
+                        if (selectedBets.length < 2) {
+                            selectedBets.push(symbol);
+                            console.log('Bet added:', selectedBets);
+                        } else {
+                            option.classList.remove('selected');
+                            resultDisplay.textContent = 'Max 2 bets allowed!';
+                        }
                     } else {
-                        option.classList.remove('selected');
-                        resultDisplay.textContent = 'Max 2 bets allowed!';
+                        selectedBets = selectedBets.filter(bet => bet !== symbol);
+                        console.log('Bet removed:', selectedBets);
                     }
-                } else {
-                    selectedBets = selectedBets.filter(bet => bet !== symbol);
-                    console.log('Bet removed:', selectedBets);
-                }
-            });
-        });
-
-        // Spin the reels
-        function spin() {
-            if (isSpinning) {
-                console.log('Spin blocked: Already spinning');
-                return;
-            }
-            if (balance < 10) {
-                resultDisplay.textContent = 'Insufficient balance!';
-                console.log('Spin blocked: Insufficient balance', balance);
-                return;
-            }
-            if (selectedBets.length === 0) {
-                resultDisplay.textContent = 'Please select at least one bet!';
-                console.log('Spin blocked: No bets selected');
-                return;
-            }
-
-            isSpinning = true;
-            spinButton.disabled = true;
-            playTenButton.disabled = true;
-            balance -= 10;
-            balanceDisplay.textContent = `Balance: ${balance} Coins`;
-            resultDisplay.textContent = '';
-            console.log('Spinning with bets:', selectedBets);
-
-            // Animate reels
-            let spins = 20;
-            let spinInterval = setInterval(() => {
-                reels.forEach(reel => {
-                    reel.textContent = symbols[Math.floor(Math.random() * symbols.length)];
                 });
-                spins--;
-                if (spins <= 0) {
-                    clearInterval(spinInterval);
-                    checkWin();
-                    isSpinning = false;
-                    spinButton.disabled = balance < 10;
-                    playTenButton.disabled = balance < 100;
-                    console.log('Spin complete, balance:', balance);
+            });
+
+            // Spin the reels
+            function spin() {
+                if (isSpinning) {
+                    console.log('Spin blocked: Already spinning');
+                    return;
                 }
-            }, 100);
-        }
-
-        // Check for winning combinations
-        function checkWin() {
-            const result = reels.map(reel => reel.textContent);
-            let message = '';
-            let winnings = 0;
-
-            console.log('Reel results:', result);
-
-            if (selectedBets.length === 1) {
-                const bet = selectedBets[0];
-                const matches = result.filter(symbol => symbol === bet).length;
-                if (matches === 1) {
-                    winnings = 10; // 1:1 payout
-                    message = `You won ${winnings} coins! (1 match)`;
-                } else if (matches === 2) {
-                    winnings = 20; // 2:1 payout
-                    message = `You won ${winnings} coins! (2 matches)`;
-                } else if (matches === 3) {
-                    winnings = 30; // 3:1 payout
-                    message = `Jackpot! You won ${winnings} coins! (3 matches)`;
-                } else {
-                    message = 'No matches, try again!';
-                }
-            } else if (selectedBets.length === 2) {
-                const bothPresent = selectedBets.every(bet => result.includes(bet));
-                if (bothPresent) {
-                    winnings = 50; // 5:1 payout for combo bet
-                    message = `Combo win! You won ${winnings} coins!`;
-                } else {
-                    message = 'No combo match, try again!';
-                }
-            }
-
-            balance += winnings;
-            balanceDisplay.textContent = `Balance: ${balance} Coins`;
-            resultDisplay.textContent = message;
-            console.log('Win check complete:', { winnings, message });
-        }
-
-        // Play 10 times automatically
-        async function playTenTimes() {
-            if (balance < 100) {
-                resultDisplay.textContent = 'Need at least 100 coins to play 10 times!';
-                console.log('Play 10 blocked: Insufficient balance', balance);
-                return;
-            }
-            if (selectedBets.length === 0) {
-                resultDisplay.textContent = 'Please select at least one bet!';
-                console.log('Play 10 blocked: No bets selected');
-                return;
-            }
-
-            console.log('Starting 10 plays with bets:', selectedBets);
-            for (let i = 0; i < 10; i++) {
                 if (balance < 10) {
-                    resultDisplay.textContent = 'Stopped: Insufficient balance!';
-                    console.log('Play 10 stopped: Insufficient balance at play', i + 1);
-                    break;
+                    resultDisplay.textContent = 'Insufficient balance!';
+                    console.log('Spin blocked: Insufficient balance', balance);
+                    return;
                 }
-                spin();
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                if (selectedBets.length === 0) {
+                    resultDisplay.textContent = 'Please select at least one bet!';
+                    console.log('Spin blocked: No bets selected');
+                    return;
+                }
+
+                isSpinning = true;
+                spinButton.disabled = true;
+                playTenButton.disabled = true;
+                balance -= 10;
+                balanceDisplay.textContent = `Balance: ${balance} Coins`;
+                resultDisplay.textContent = '';
+                console.log('Spinning with bets:', selectedBets);
+
+                // Animate reels
+                let spins = 20;
+                let spinInterval = setInterval(() => {
+                    reels.forEach(reel => {
+                        reel.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    });
+                    spins--;
+                    if (spins <= 0) {
+                        clearInterval(spinInterval);
+                        checkWin();
+                        isSpinning = false;
+                        spinButton.disabled = balance < 10;
+                        playTenButton.disabled = balance < 100;
+                        console.log('Spin complete, balance:', balance);
+                    }
+                }, 100);
             }
-            console.log('10 plays completed');
+
+            // Check for winning combinations
+            function checkWin() {
+                const result = reels.map(reel => reel.textContent);
+                let message = '';
+                let winnings = 0;
+
+                console.log('Reel results:', result);
+
+                if (selectedBets.length === 1) {
+                    const bet = selectedBets[0];
+                    const matches = result.filter(symbol => symbol === bet).length;
+                    if (matches === 1) {
+                        winnings = 10; // 1:1 payout
+                        message = `You won ${winnings} coins! (1 match)`;
+                    } else if (matches === 2) {
+                        winnings = 20; // 2:1 payout
+                        message = `You won ${winnings} coins! (2 matches)`;
+                    } else if (matches === 3) {
+                        winnings = 30; // 3:1 payout
+                        message = `Jackpot! You won ${winnings} coins! (3 matches)`;
+                    } else {
+                        message = 'No matches, try again!';
+                    }
+                } else if (selectedBets.length === 2) {
+                    const bothPresent = selectedBets.every(bet => result.includes(bet));
+                    if (bothPresent) {
+                        winnings = 50; // 5:1 payout for combo bet
+                        message = `Combo win! You won ${winnings} coins!`;
+                    } else {
+                        message = 'No combo match, try again!';
+                    }
+                }
+
+                balance += winnings;
+                balanceDisplay.textContent = `Balance: ${balance} Coins`;
+                resultDisplay.textContent = message;
+                console.log('Win check complete:', { winnings, message });
+            }
+
+            // Play 10 times automatically
+            async function playTenTimes() {
+                if (balance < 100) {
+                    resultDisplay.textContent = 'Need at least 100 coins to play 10 times!';
+                    console.log('Play 10 blocked: Insufficient balance', balance);
+                    return;
+                }
+                if (selectedBets.length === 0) {
+                    resultDisplay.textContent = 'Please select at least one bet!';
+                    console.log('Play 10 blocked: No bets selected');
+                    return;
+                }
+
+                console.log('Starting 10 plays with bets:', selectedBets);
+                for (let i = 0; i < 10; i++) {
+                    if (balance < 10) {
+                        resultDisplay.textContent = 'Stopped: Insufficient balance!';
+                        console.log('Play 10 stopped: Insufficient balance at play', i + 1);
+                        break;
+                    }
+                    spin();
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                console.log('10 plays completed');
+            }
+
+            // Event listeners
+            spinButton.addEventListener('click', spin);
+            playTenButton.addEventListener('click', playTenTimes);
+
+            // Initial button state
+            playTenButton.disabled = balance < 100;
+            console.log('Initial setup complete, balance:', balance);
         }
-
-        // Event listeners
-        spinButton.addEventListener('click', spin);
-        playTenButton.addEventListener('click', playTenTimes);
-
-        // Initial button state
-        playTenButton.disabled = balance < 100;
-        console.log('Initial setup complete, balance:', balance);
     </script>
 </body>
 </html>
